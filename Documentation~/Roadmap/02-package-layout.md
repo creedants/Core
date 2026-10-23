@@ -109,21 +109,28 @@ ECS and GameObject presentation.
 
 | Assembly | Holds | References |
 | --- | --- | --- |
-| `Spellbound.Objects` | Presets, modules, contracts, instance data, data access interfaces, `DeltaResolver`, surface interfaces | `Spellbound.Core` |
-| `Spellbound.Objects.Entities` | Components, systems, bakers, prefab registry, `ObjectParent`, proximity job, and the GameObject bridge `StaticEventSurface` | `Spellbound.Objects`, `Unity.Entities`, `Unity.Entities.Hybrid`, `Unity.Transforms`, `Unity.Collections`, `Unity.Mathematics`, `Unity.Burst` |
-| `Spellbound.Objects.Graphics` (optional) | `EntityBatchConsolidationSystem` | `Spellbound.Objects.Entities`, `Unity.Entities.Graphics` |
+| `Spellbound.Objects` | Presets, modules, contracts, instance data, data access interfaces, `DeltaResolver`, surface interfaces | `Spellbound.Core`, `Unity.Mathematics` |
+| `Spellbound.Objects.Entities` | Components, systems, bakers, prefab registry, `ObjectParent`, proximity job, and the GameObject bridge `StaticEventSurface` | `Spellbound.Core`, `Spellbound.Objects`, `Unity.Entities`, `Unity.Entities.Hybrid`, `Unity.Transforms`, `Unity.Collections`, `Unity.Mathematics`, `Unity.Burst` |
+| `Spellbound.Objects.Graphics` (optional) | `EntityBatchConsolidationSystem` | `Spellbound.Objects.Entities`, `Unity.Entities`, `Unity.Collections`, `Unity.Entities.Graphics` |
 | `Spellbound.Objects.Console` (optional) | Preset spawn commands | `Spellbound.Objects`, `Spellbound.Console` |
 | `Spellbound.Objects.Editor` | Preset inspector, manifest postprocessor | `Spellbound.Objects`, `Spellbound.Objects.Entities` |
 | `Spellbound.Objects.Tests` | EditMode tests of data, deltas, and contracts | `Spellbound.Objects`, test runner |
 | `Spellbound.Objects.PlayModeTests` | World tests of spawning and proximity | `Spellbound.Objects.Entities`, test runner |
 
-For `Spellbound.Objects` to stay free of Entities, three things change.
+For `Spellbound.Objects` to stay free of Entities, every reference to the concrete `ObjectParent` and to `Entity`
+leaves it.
 
-- The module contracts take an interface instead of the concrete `ObjectParent`. `IDispatch` already takes `IObjectParent`.
+- The module contracts (`IChangeHandler`, `IChangeResolver`, `ICreateHandler`, `ICreateResolver`, `IDeleteHandler`,
+  `IDeleteResolver`), the data callbacks in `IPackerObjectData` and `ObjectDataExtensions`, and the
+  `IObjectParent.ObjectParent` property take or return an interface instead of the concrete class. `IDispatch`
+  already takes `IObjectParent`.
 - `IObjectParent.InitializeObjectParentChunk(Vector3Int, Entity)` loses its `Entity` parameter. The ECS assembly
   supplies the entity.
-- `TransformData` keeps its engine-type constructors in `Spellbound.Objects`. Its `LocalTransform` conversions move
-  to extension methods in `Spellbound.Objects.Entities`.
+- `ObjectPresetUtils.TryGetEntityPrefab`, which returns an `Entity`, moves to `Spellbound.Objects.Entities`.
+- `TransformData`'s `LocalTransform` conversions move to extension methods in `Spellbound.Objects.Entities`. Its
+  other constructors use `Unity.Mathematics`, which the objects package already depends on. Unity 6.5 made
+  Mathematics a built-in engine module ([Unity 6.5 features](https://docs.unity.com/en-us/engine/6000.6/manual/whats-new/unity65)),
+  so on newer editors this reference costs nothing.
 
 `Spellbound.Objects.Console` lives in the objects package rather than the console package. That keeps the console
 free of world objects, and it keeps the objects package free of a hard console dependency.

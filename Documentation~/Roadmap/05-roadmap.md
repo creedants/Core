@@ -143,8 +143,8 @@ support window.
 
 - Make 6000.7 a required CI target, and fix what it reports.
 - Use `versionDefines` for the core packages whose versions the editor now fixes.
-- Switch assembly scanning to the CoreCLR-ready API and statics cleanup to `[AutoStaticsCleanup]`, if Unity has shipped
-  them in 6.7. Otherwise keep the explicit resets from Phase 0.
+- Switch assembly scanning to the CoreCLR-ready API if Unity has shipped it in 6.7. Adopt `[AutoStaticsCleanup]`
+  (available since 6.5) in place of the explicit resets once 6.3 support ends.
 - Run the test suite on the experimental CoreCLR player on one desktop platform, and record what fails.
 - Add analyzers or CI searches for banned APIs: `GetInstanceID`, `FindObjectsOfType`, `Entities.ForEach`, `IAspect`,
   `BinaryFormatter`, and `string.GetHashCode` in persisted or networked identity.
@@ -210,7 +210,8 @@ simulation or server authority. The two lead to different seams.
 - Move to the CoreCLR editor and Unity 7 once a Unity 7 LTS exists.
 - Create packages from the "when needed" list in [Package layout](02-package-layout.md#packages-to-create-when-needed)
   as their triggers fire, each through a decision record.
-- Add a public API snapshot to CI, an architecture owner, and a regular review of each package's dependencies.
+- Keep the public API snapshot from Phase 2 current, name an architecture owner, and review each package's
+  dependencies regularly.
 
 **Effort.** Ongoing, roughly 10 to 20% of one engineer, rising with the number of packages.
 
@@ -218,12 +219,14 @@ simulation or server authority. The two lead to different seams.
 
 ## Keeping in-flight games working during the split
 
-1. **Phase 1 changes no install.** Games keep one dependency, `com.spellboundstudios.core`. Types that move
-   namespace carry `[MovedFrom]`, so Unity's script updater rewrites game code on upgrade and serialized data keeps
-   loading. Script `.meta` files move with their scripts, so scene and prefab references keep working.
+1. **Phase 1 changes no install.** Games keep one dependency, `com.spellboundstudios.core`. Types that move carry
+   `[MovedFrom]`, so serialized data keeps loading. Unity's script updater rewrites game code for some of these moves
+   but not for assembly moves, so each release note lists the `using` changes. Script `.meta` files move with their
+   scripts, so scene and prefab references keep working.
 2. **The last 1.x release is the bridge.** The final Core 1.x release contains all three areas, already in their new
    namespaces and assemblies, with `[Obsolete]` warnings on anything removed in 2.0. A game that compiles cleanly
-   against it has nothing left to fix except its manifest.
+   against it has already handled the namespace and assembly moves. It still needs manifest changes, asmdef
+   references, and the `Task` to `Awaitable` signature changes listed in the migration guide.
 3. **Core 2.0 and the new packages ship together.** A game migrates by adding the scoped registry and the packages
    it uses, and adding asmdef references now that `autoReferenced` is off. The migration guide lists every removed
    member and its replacement.

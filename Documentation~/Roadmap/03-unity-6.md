@@ -24,7 +24,7 @@ package. Each item carries its source. Items are labelled.
 | 6.7 | Public beta since 17 September 2026, no release date | Confirmed | [6.7 beta post][u67b] |
 | 6.7 as LTS | Planned as the next LTS | Announced | [6.6 post][u66] |
 | 7.0 | First alpha 5 October 2026 | Confirmed | [CoreCLR update, October 2026][clr-oct] |
-| 7.0 schedule | Beta in December 2026, release in the first quarter of 2027 | Announced, reported by a third party | [Inven Global][inven] |
+| 7.0 schedule | Beta in December 2026, release in the first quarter of 2027 | Unconfirmed, reported by a third party with no primary source | [Inven Global][inven] |
 
 Unity's support policy gives an LTS release two years of support (three for Enterprise and Industry customers). An
 update release is supported until the next one ships ([Unity 6 support][support], confirmed). For a studio that
@@ -52,14 +52,18 @@ Unity has not published final 6.7 notes. The 6.7 manual says more will be publis
 ### CoreCLR, .NET, and domain reload
 
 - The schedule moved. In March 2026 Unity put the CoreCLR editor and the end of Mono in 6.8
-  ([CoreCLR and ECS update, March 2026][clr-mar], announced). In October 2026 Unity moved them to 7.0. The 7.0 alpha
-  is the first CoreCLR editor without Mono. It still targets C# 9 and .NET Standard 2.1
+  ([CoreCLR and ECS update, March 2026][clr-mar], announced). Later updates target 7.0
+  ([CoreCLR update, June 2026][clr-jun], announced), and the first 7.0 alpha became available on 5 October 2026 as
+  the first CoreCLR editor without Mono. It still targets C# 9 and .NET Standard 2.1
   ([CoreCLR update, October 2026][clr-oct], confirmed).
 - .NET 10 and C# 14 are planned, with no committed date ([CoreCLR update, October 2026][clr-oct], announced).
 - Domain reload goes away in 7.0 and is replaced by code reload ([CoreCLR update, June 2026][clr-jun], announced).
   Unity staff confirmed the 7.0 alpha has no domain reload ([CoreCLR update, October 2026][clr-oct], confirmed).
 - From 6.6, new projects enter play mode without a domain reload by default, so static fields are not reset. Existing
   projects keep their setting ([6.6 post][u66], confirmed).
+- Unity 6.5 added the `[AutoStaticsCleanup]` and `[NoAutoStaticsCleanup]` attributes, which reset static fields
+  through generated code, and an optional analyzer that lists statics needing a reset
+  ([Unity 6.5 features][u65], confirmed).
 - Unity's upgrade guide for library authors ([CoreCLR upgrade guide][clr-guide], announced, a living document) says:
   - Statics are not reset for you. Use `[AutoStaticsCleanup]` or `[BeforeCodeUnloading]`.
   - `AppDomain.GetAssemblies()` raises warnings. Use `UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies()`.
@@ -73,8 +77,8 @@ Unity has not published final 6.7 notes. The 6.7 manual says more will be publis
 
 - From 6.4, Entities, Collections, Mathematics, and Entities Graphics ship with the editor as core packages
   ([6.4 post][u64], confirmed). Unity's core package table for 6.6 lists Entities, Entities Graphics, Collections,
-  Unity Physics, and uGUI. It does not list Mathematics ([core packages][core], confirmed). We could not resolve that
-  difference (unconfirmed). A project cannot choose a different version of a core package
+  Unity Physics, and uGUI. It does not list Mathematics ([core packages][core], confirmed), because 6.5 made Mathematics a
+  built-in engine module ([Unity 6.5 features][u65], confirmed). A project cannot choose a different version of a core package
   ([core packages][core], confirmed).
 - Unity plans for every GameObject to carry ECS component data and for `EntityId` to identify both GameObjects and
   entities ([ECS status, December 2025][ecs-dec], announced).
@@ -120,7 +124,8 @@ Each action names the fact above that drives it and the phase in the [roadmap](0
 4. **Make every static reset explicit (Phase 0, finished in Phase 3).** Domain reload is off by default for new 6.6
    projects and gone in 7.0. Give each static registry the `SubsystemRegistration` reset that `PresetRegistry` already
    has. This applies to `CommandRegistry`, `AttributeCommandRegistry`, `PresetResolver`, `DeltaResolver`, and
-   `SingletonManager`. Move to `[AutoStaticsCleanup]` when it ships. Add a PlayMode test that enters play mode twice
+   `SingletonManager`. `[AutoStaticsCleanup]` exists from 6.5, so keep the explicit resets while 6.3 is supported and
+   adopt the attribute once the minimum version is 6.7. Add a PlayMode test that enters play mode twice
    with domain reload off.
 5. **Put assembly scanning behind one call (Phase 0).** `dev`'s `Runtime/Tooling/AssemblyScanning.cs` is the single
    place that calls `AppDomain.GetAssemblies()` at runtime. Move `Editor/LogConfigEditor.cs` to `TypeCache`. Then the
@@ -160,6 +165,7 @@ Each action names the fact above that drives it and the phase in the [roadmap](0
 [clr-guide]: https://discussions.unity.com/t/path-to-coreclr-2026-upgrade-guide/1714279
 [ecs-dec]: https://discussions.unity.com/t/ecs-development-status-december-2025/1699284
 [core]: https://docs.unity3d.com/Manual/pack-core.html
+[u65]: https://docs.unity.com/en-us/engine/6000.6/manual/whats-new/unity65
 [getid]: https://docs.unity.com/en-us/engine/6000.6/script-reference/unityengine/object/getinstanceid
 [find]: https://docs.unity.com/en-us/engine/6000.6/script-reference/unityengine/object/findobjectsbytype
 [ent-cl]: https://docs.unity3d.com/Packages/com.unity.entities@6.6/changelog/CHANGELOG.html

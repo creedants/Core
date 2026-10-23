@@ -143,7 +143,7 @@ cause.
   (`IChangeHandler.cs`, `IChangeResolver.cs`, `ICreateHandler.cs`, `ICreateResolver.cs`, `IDeleteHandler.cs`,
   `IDeleteResolver.cs`). Only `IDispatch.cs` uses the `IObjectParent` interface.
 - **ObjectData and ObjectHandling.** `Runtime/ObjectData/IPackerObjectData.cs` takes `ObjectParent`, and
-  `Runtime/ObjectHandling/ObjectParent.cs` uses every ObjectData type.
+  `Runtime/ObjectHandling/ObjectParent.cs` uses the ObjectData interfaces, data keys, and instance-entry types.
 - **Packing and Registries.** `Runtime/Packing/ISmartPacker.cs` extends `IRegistryEntry`, while
   `Runtime/Registries/RegistryPacker.cs` calls `Packer`, and `Runtime/Registries/PackerIdAttribute.cs` declares a
   `Spellbound.Core.Packing` type inside the Registries folder.
@@ -172,7 +172,8 @@ cannot reference another assembly that references it back. Breaking them is the 
 
 - **Interface segregation.** `Runtime/ObjectHandling/IObjectInstanceConsumer.cs` has twelve methods covering load,
   create, delete, data change, dynamic objects, and queries. On `main`, `Runtime/Surfaces/StaticEventSurface.cs`
-  implements `TryRead`, `TryWrite`, and `TryDestroy` by throwing `NotImplementedException`. `dev` implements them.
+  implements `TryRead`, `TryWrite`, and `TryDestroy` by throwing `NotImplementedException`. `dev` implements `TryRead`
+  and replaces the other two with implemented `Write` and `Destroy` methods.
 - **Liskov substitution.** `Runtime/Tooling/ObservableArray.cs` implements `IList<T>` and reports `IsReadOnly` as
   false, yet `Add`, `Insert`, `Remove`, and `RemoveAt` throw.
 - **Dependency inversion.** The module contracts depend on the concrete `ObjectParent` (listed above).

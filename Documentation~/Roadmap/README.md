@@ -57,7 +57,7 @@ justifies them. [Package layout](02-package-layout.md) lists those triggers.
 
 - Accept or amend the three-package layout and the package names.
 - Choose a package registry (recommended: a scoped npm registry) to replace git URLs. Unity does not support git
-  dependencies between packages, so a split needs one.
+  dependencies between packages, so without a registry every game must list and align each package by hand.
 - Choose the CI service and fund its Unity licence and runner minutes.
 - Set the minimum Unity version (recommended: 6000.3 LTS now, 6000.7 LTS once it ships).
 - Decide how long Core 1.x receives fixes while in-flight games migrate (recommended: two quarters after Core 2.0).

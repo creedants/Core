@@ -52,9 +52,12 @@ end says which to adopt now and which can wait.
 - **Deprecation window.** A public member is first marked `[Obsolete("Use X instead. Removed in 3.0.")]` as a warning
   for at least one minor release and at least one quarter. It then becomes an error, and the next major version
   removes it.
-- **Moving types.** When a type moves namespace or assembly, add `[MovedFrom]` from `UnityEngine.Scripting.APIUpdating`.
-  Unity's script updater then rewrites game code, and `[SerializeReference]` data such as the `PresetModule` lists in
-  `Runtime/Objects/PresetSurface.cs` keeps loading. MonoBehaviour and ScriptableObject references survive a move as
+- **Moving types.** When a type moves namespace or assembly, add `[MovedFrom]` from `UnityEngine.Scripting.APIUpdating`,
+  so `[SerializeReference]` data such as the `PresetModule` lists in `Runtime/Objects/PresetSurface.cs` keeps loading.
+  Unity's script updater rewrites game code only for some moves. Unity's reference source turns source updating off
+  when the assembly or class name changes
+  ([`UpdatedFromAttribute.cs`](https://raw.githubusercontent.com/Unity-Technologies/UnityCsReference/6000.3/Runtime/Export/Scripting/APIUpdating/UpdatedFromAttribute.cs)).
+  The package split moves assemblies, so the migration guide must list each `using` and asmdef change. MonoBehaviour and ScriptableObject references survive a move as
   long as the `.cs` file keeps its `.meta` file, because Unity stores them by script GUID.
 - **Changelog.** Every pull request that changes behavior adds a `CHANGELOG.md` line under an Unreleased heading, in
   the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format. A release turns that heading into a version and
@@ -127,12 +130,15 @@ The pipeline for each pull request:
 Today games install Core by git URL. The `author.url` in `package.json` still points at the old `Spell-Bound-Studios`
 organization, which upstream issue #79 tracks.
 
-Git URLs work for one package. They do not work for several, because the Package Manager does not support git
+Git URLs work well for one package. They scale poorly to several, because the Package Manager does not support git
 dependencies between packages ([git dependencies](https://docs.unity3d.com/Manual/upm-git.html)). With git URLs, every
-game would have to list Core, Console, and Objects in its own manifest and keep their commits compatible by hand.
+game must list Core, Console, and Objects in its own manifest and keep their commits compatible by hand. That works,
+but it moves dependency management into every game.
 
-**Recommendation.** Publish to a private scoped npm registry. Options include a self-hosted Verdaccio, GitHub Packages,
-or a hosted service. Each game adds one `scopedRegistries` entry for `com.spellboundstudios`, and `package.json`
+**Recommendation.** Publish to a private scoped npm registry, such as a self-hosted Verdaccio or a hosted registry
+verified against Unity's [scoped registry requirements](https://docs.unity3d.com/Manual/upm-scoped-host.html).
+GitHub Packages does not fit, because its npm registry requires `@scope/name` package names, which Unity does not
+support. Each game adds one `scopedRegistries` entry for `com.spellboundstudios`, and `package.json`
 dependencies then resolve by version. Keep git URLs for testing a branch before release. Decide on package signing at
 the same time (see [Unity 6.7 and later](03-unity-6.md#package-manager)).
 
@@ -145,9 +151,10 @@ the same time (see [Unity 6.7 and later](03-unity-6.md#package-manager)).
 | Changelog per pull request, semantic versioning | Now (Phase 0) | Free, and needed before any breaking change |
 | `CODEOWNERS` | Now (Phase 0) | One line per package, and it grows with the team |
 | Namespace and folder agreement | Phase 1 | Done while moving types into assemblies, with `[MovedFrom]` |
-| PlayMode tests, domain-reload test | Phase 1 | Needed before the split, to prove nothing changed |
+| Domain-reload PlayMode test | Now (Phase 0) | Covers the static-state fixes that Phase 0 makes |
+| Spawning and proximity PlayMode tests | Phase 1 | Needed before the split, to prove nothing changed |
 | `autoReferenced: false` | Phase 2 | Breaks games without asmdefs, so it ships with the major version |
-| Scoped registry | Phase 2 | Required once there is more than one package |
+| Scoped registry | Phase 2 | Lets packages depend on each other by version once there is more than one |
 | Public API snapshot in CI, decision records | Phase 2 | Worth it once more than a handful of engineers change the packages |
 | Coverage targets enforced in CI | Phase 3 | Report coverage first, enforce once the baseline is known |
 | Analyzers for banned APIs | Phase 3 | Lands with the Unity 6.7 work that motivates it |
