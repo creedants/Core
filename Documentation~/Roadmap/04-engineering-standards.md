@@ -18,16 +18,18 @@ end says which to adopt now and which can wait.
 - Every package uses the same layout: `Runtime/`, `Editor/`, `Tests/Editor/`, `Tests/Runtime/`, `Samples~/`,
   `Documentation~/`, `package.json`, `README.md`, `CHANGELOG.md`, and `LICENSE.md`. This follows Unity's
   [package layout](https://docs.unity3d.com/Manual/cus-layout.html).
-- Editor-only code lives in an editor assembly, not behind `#if UNITY_EDITOR` in a runtime file. `#if UNITY_EDITOR`
-  stays for the rare case where a runtime type needs an editor hook, such as `OnValidate` in
-  `Runtime/Registries/HashedScriptableObject.cs`. Every `using UnityEditor;` sits inside the guard.
+- Editor-only tools live in an editor assembly. `#if UNITY_EDITOR` stays for the rare case where a runtime type needs
+  an editor hook, such as `OnValidate` in `Runtime/Registries/HashedScriptableObject.cs`, and its directly called
+  `HashCollisionGuard` helper. Any `using UnityEditor;` retained in a runtime file sits inside the guard. Editor
+  assembly files need no such guard. Runtime assemblies never reference editor assemblies.
 - Fix misspelled public names in the same release that moves them, for example `IAwardReciever` to
   `IAwardReceiver`. That release breaks callers anyway.
 
 ## Assembly definition rules
 
-1. One assembly per package layer: runtime, editor, EditMode tests, PlayMode tests. Add an assembly inside a layer
-   only to isolate an optional dependency, as the objects package does for Entities Graphics and the console.
+1. Use runtime, editor, EditMode-test, and PlayMode-test layers. Split a runtime layer further where the compiler
+   must enforce a boundary: console model versus UI, and object data versus Entities. Optional integrations also get
+   separate assemblies, as the objects package does for Entities Graphics and the console.
 2. `autoReferenced: false` for every library assembly. Games and other packages reference what they use explicitly.
    That keeps a game's own assembly from silently depending on every Spellbound type. It is a breaking change for games
    whose scripts live in Unity's default `Assembly-CSharp` with no asmdef, so it ships with the package split in
@@ -44,8 +46,9 @@ end says which to adopt now and which can wait.
 
 ## Public API and breaking changes
 
-- **Internal by default.** A type is public only when a game or another package needs it. Tests reach internals
-  through `InternalsVisibleTo`. Most of Core's public surface today is public by habit, so expect Phase 1 to narrow it.
+- **Internal by default.** New types are public only when a game or another package needs them. Tests reach internals
+  through `InternalsVisibleTo`. Audit existing public types against game callers in Phase 1, deprecate replacements in
+  the final compatible 1.x release, and narrow visibility only in the 2.0 candidate after the deprecation window.
 - **Semantic versioning.** A major version may break callers. A minor version adds features. A patch version only
   fixes defects. Serialized data counts as API: renaming a `[PackerId]`, a serialized field, or a
   `[SerializeReference]` type's namespace or assembly is a breaking change.
@@ -104,6 +107,9 @@ The pipeline for each pull request:
 3. A player build of a minimal host project with the package installed the way a game installs it. This is the check
    that catches editor-only code in runtime assemblies.
 4. The same tests on the next LTS (6000.7 beta now), allowed to fail until it ships.
+
+The compatible Core 1.x maintenance branch also keeps CI on its existing minimum editor during the promised critical-fix
+window. Raising an editor floor belongs to the 2.0 candidate, not a compatible 1.x update.
 
 ## Code ownership
 

@@ -35,7 +35,7 @@ justifies them. [Package layout](02-package-layout.md) lists those triggers.
 3. **Shrink Core to the engine.** Core's code that is not about consoles or world objects uses no Unity package. Move
    Entities, Entities Graphics, Input System, and uGUI to the packages that use them, and drop Unity Physics, which no
    file uses.
-4. **Move to Unity 6.3 LTS now and plan for 6.7 LTS.** Unity ended support for 6.0 LTS in October 2026. Unity 6.7 is in
+4. **Move to Unity 6.3 LTS now and plan for 6.7 LTS.** Unity lists 6.0 LTS support through October 2026. Unity 6.7 is in
    beta, is planned as the next LTS, and is the last release on Mono. Unity 7 removes domain reload. The package needs
    to reset its static state explicitly and stop using `AppDomain` assembly scans.
 5. **Keep multiplayer and MMO games possible without writing networking.** Keep data separate from presentation, make the
@@ -46,7 +46,7 @@ justifies them. [Package layout](02-package-layout.md) lists those triggers.
 
 | Phase | When (quarters from kickoff) | Outcome |
 | --- | --- | --- |
-| 0. Safety net | Q1, first six weeks | CI, tests in CI, player build check, asmdef and dependency hygiene, Unity 6.3 LTS minimum |
+| 0. Safety net | Q1, first six weeks | CI, tests in CI, player build check, asmdef and dependency hygiene, Unity 6.3 LTS minimum for the 2.0 candidate |
 | 1. Boundaries inside one package | Q1 to Q2 | Per-area assemblies, no folder cycles, `[MovedFrom]` on moved types |
 | 2. Package split | Q2 to Q3 | Core 2.0, Console 1.0, Objects 1.0 on a scoped registry; Core 1.x kept for in-flight games |
 | 3. Unity 6.7 LTS alignment | Q3, once 6.7 LTS has shipped | Domain-reload-free, CoreCLR-ready, `EntityId`-ready |

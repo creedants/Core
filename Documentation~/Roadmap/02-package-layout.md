@@ -35,8 +35,11 @@ prototype to a dedicated server build, without pulling in ECS, input, or UI.
 - `Runtime/Sampling/` from `dev`.
 - The general parts of `Runtime/Tooling/`: `ImmutableAttribute.cs`, `ObservableArray.cs`, and `dev`'s
   `AssemblyScanning.cs` and `SerializeReferenceDropdownAttribute.cs`.
-- Editor: `Editor/LogConfigEditor.cs`, the editor-only parts of `Runtime/Registries/HashCollisionGuard.cs` and
-  `Runtime/Registries/HashedAssetTools.cs`, the `[Immutable]` drawer, and `dev`'s `SerializeReferenceDropdownDrawer.cs`.
+- Editor: `Editor/LogConfigEditor.cs`, `Runtime/Registries/HashedAssetTools.cs`, the `[Immutable]` drawer, and
+  `dev`'s `SerializeReferenceDropdownDrawer.cs`. Keep `HashCollisionGuard` with the guarded `HashedScriptableObject`
+  validation hook in the runtime assembly for now: that hook calls it directly, so moving only the helper into
+  `Spellbound.Core.Editor` would require a forbidden runtime-to-editor reference. Give `Spellbound.Core.Editor`
+  friend access to the internal `Restamp` method used by `HashedAssetTools`.
 
 `Runtime/Tooling/SingletonManager.cs` stays for one compatibility window, marked `[Obsolete]`. Its only callers move
 to the objects package, where ECS singletons replace it.
@@ -112,10 +115,13 @@ ECS and GameObject presentation.
 | `Spellbound.Objects` | Presets, modules, contracts, instance data, data access interfaces, `DeltaResolver`, surface interfaces | `Spellbound.Core`, `Unity.Mathematics` |
 | `Spellbound.Objects.Entities` | Components, systems, bakers, prefab registry, `ObjectParent`, proximity job, and the GameObject bridge `StaticEventSurface` | `Spellbound.Core`, `Spellbound.Objects`, `Unity.Entities`, `Unity.Entities.Hybrid`, `Unity.Transforms`, `Unity.Collections`, `Unity.Mathematics`, `Unity.Burst` |
 | `Spellbound.Objects.Graphics` (optional) | `EntityBatchConsolidationSystem` | `Spellbound.Objects.Entities`, `Unity.Entities`, `Unity.Collections`, `Unity.Entities.Graphics` |
-| `Spellbound.Objects.Console` (optional) | Preset spawn commands | `Spellbound.Objects`, `Spellbound.Console` |
+| `Spellbound.Objects.Console` (optional) | Preset spawn commands | `Spellbound.Core`, `Spellbound.Objects`, `Spellbound.Console` |
 | `Spellbound.Objects.Editor` | Preset inspector, manifest postprocessor | `Spellbound.Objects`, `Spellbound.Objects.Entities` |
 | `Spellbound.Objects.Tests` | EditMode tests of data, deltas, and contracts | `Spellbound.Objects`, test runner |
 | `Spellbound.Objects.PlayModeTests` | World tests of spawning and proximity | `Spellbound.Objects.Entities`, test runner |
+
+The tables list the intended layer references. Add direct Core and Unity assembly references to each test assembly
+for the types its tests actually use; references are not inherited transitively from the assembly under test.
 
 For `Spellbound.Objects` to stay free of Entities, every reference to the concrete `ObjectParent` and to `Entity`
 leaves it.

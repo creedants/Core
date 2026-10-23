@@ -129,8 +129,8 @@ flowchart LR
     ObjectHandling --> Tooling
 ```
 
-The diagram shows the cycles only, with the arrow pointing from the user to the used folder. Each cycle has a concrete
-cause.
+The diagram highlights folder dependencies and several cycles, with the arrow pointing from the user to the used
+folder. Each cycle has a concrete cause.
 
 - **Logger to Console.** `Runtime/Logger/Sinks/GameConsoleSink.cs` calls `Console.ConsoleLogger`. A logging foundation
   should not know about a console. The sink belongs in the console.
@@ -228,11 +228,14 @@ that the default for new projects, and Unity 7 removes domain reload entirely (s
 
 - `Runtime/Logger/Log.cs` on `main` never clears its sink array, and `LogBootstrap` adds sinks on every play. We expect
   duplicated output with domain reload off. `dev` 1.1.5 fixes this with `Log.ClearSinks`.
-- `Runtime/Console/CommandRegistry.cs` holds a static instance, and `ConsoleController.Awake` registers every command
-  again on each play, which logs a duplicate warning per command.
-- `Runtime/Console/AttributeCommandRegistry.cs` caches `MonoBehaviour` instances in a static dictionary. After a scene
-  change, we expect the cache to return destroyed objects.
-- `Runtime/ObjectData/DeltaResolver.cs` and `Runtime/Console/PresetResolver.cs` never reset.
+- On `main`, `Runtime/Console/CommandRegistry.cs` holds a static instance, and `ConsoleController.Awake` registers every
+  command again on each play, which logs a duplicate warning per command. `dev` resets the instance at
+  `SubsystemRegistration`.
+- On `main`, `Runtime/Console/AttributeCommandRegistry.cs` caches `MonoBehaviour` instances in a static dictionary.
+  After a scene change, we expect the cache to return destroyed objects. `dev` resets this registry at
+  `SubsystemRegistration` and removes a cached Unity object when it has been destroyed.
+- `Runtime/ObjectData/DeltaResolver.cs` never resets on either branch. `Runtime/Console/PresetResolver.cs` has no
+  automatic reset on `main`; `dev` adds one at `SubsystemRegistration`.
 - `Runtime/Objects/PresetRegistry.cs` and `Runtime/Packing/SmartPackerRegistry.cs` reset at `SubsystemRegistration`.
   That is the pattern the rest should copy.
 

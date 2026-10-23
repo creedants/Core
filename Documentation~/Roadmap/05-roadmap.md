@@ -2,7 +2,8 @@
 
 [Back to the summary](README.md)
 
-The phases are ordered by dependency. Each phase leaves every game working, and each one makes the next cheaper.
+The phases are ordered by dependency. Released Core 1.x remains available while the breaking work is validated on
+an opt-in Core 2.0 development branch. Games choose when to adopt the candidate, then the split packages.
 Timing is in quarters from kickoff. Effort is in engineer-weeks, assuming one or two engineers who know the code,
 working on this part time beside game work. It excludes review time and the games' own migration work.
 
@@ -39,10 +40,12 @@ uses.
   `Runtime/Tooling/ImmutableAttribute.cs`.
 - Asmdef hygiene in `Runtime/SpellBound.Core.asmdef`: remove the two Unity Physics references, add `UnityEngine.UI`
   explicitly, and turn off `allowUnsafeCode`. Keep `autoReferenced` on for now.
-- Raise the minimum to Unity 6000.3 LTS and update package versions (actions 1 and 2 in
-  [Unity 6.7 and later](03-unity-6.md#actions-for-this-package)).
-- Add a `SubsystemRegistration` reset to every static registry, and a PlayMode test that enters play mode twice with
-  domain reload off.
+- Create the Core 2.0 development branch, raise its minimum to Unity 6000.3 LTS, and update its package versions
+  (actions 1 and 2 in [Unity 6.7 and later](03-unity-6.md#actions-for-this-package)). Keep the released 1.x editor floor
+  and dependency compatibility, with CI on its existing minimum for critical fixes during the support window.
+- Audit every static registry after landing `dev`: preserve its new resets for `CommandRegistry`,
+  `AttributeCommandRegistry`, and `PresetResolver`, add the missing `DeltaResolver` reset, and check
+  `SingletonManager` initialization order. Add a PlayMode test that enters play mode twice with domain reload off.
 - Add `CODEOWNERS` and the changelog rule.
 - File the defects in [Current state](01-current-state.md#defects-found-while-reading), each with a failing test.
 
@@ -67,7 +70,8 @@ double-play-mode test passes.
 
 ## Phase 1. Boundaries inside one package (Q1 to Q2, about ten weeks)
 
-**Goal.** The final assembly structure exists inside today's package, and the compiler enforces it.
+**Goal.** The final assembly structure exists inside a single-package Core 2.0 development candidate, and the compiler
+enforces it. This candidate is not published as a compatible 1.x update.
 
 **Work.**
 
@@ -78,8 +82,11 @@ double-play-mode test passes.
   `GameConsoleSink` to the console. Replace the direct call to `ConsoleCommandRouter` with a fallback hook. Make the
   module contracts take an interface instead of `ObjectParent`. Move `PackerIdAttribute` into the packing folder and
   decide which way `ISmartPacker` and `IRegistryEntry` depend. Move the proximity job out of Tooling.
-- Move types to their final namespaces with `[MovedFrom]`. Fix folder and namespace mismatches.
-- Move the benchmark to `Samples~/`. Delete the types a search of the games shows are unused.
+- On the 2.0 development branch, move types to their final namespaces with `[MovedFrom]`. Fix folder and namespace
+  mismatches. Publish the source migration checklist with the candidate; `[MovedFrom]` does not preserve C# callers.
+- Move the benchmark to `Samples~/`. Search the games before removing public types. Publish deprecation warnings and
+  replacement guidance in the last compatible 1.x release; remove a public API from the 2.0 candidate only after at
+  least one minor release and one quarter of warning.
 - Add PlayMode tests for spawning and proximity before touching `ObjectParent`.
 
 **Why now.** Breaking cycles is the hard part of any split, and it is far safer inside one package, where a game
@@ -87,8 +94,9 @@ still installs a single dependency. Once the assemblies compile apart, Phase 2 i
 
 **Entry criteria.** Phase 0 exit criteria met.
 
-**Exit criteria.** Each assembly compiles with only its allowed references. No assembly cycle exists. Every game
-in development upgrades to this release and its scenes and presets load unchanged.
+**Exit criteria.** Each assembly compiles with only its allowed references. No assembly cycle exists. Each game team
+validates the opt-in candidate on a migration branch, using the source and asmdef checklist, and its scenes and
+presets load unchanged. Production branches can remain on the last compatible 1.x release.
 
 **Effort.** M, 5 to 8 engineer-weeks. Most of it is in the objects area.
 
@@ -111,7 +119,9 @@ in development upgrades to this release and its scenes and presets load unchange
 - Stand up the scoped registry and publish to it from CI.
 - Move each assembly group into its package directory, with its own `package.json`, `README.md`, `CHANGELOG.md`, and
   samples. Release Core 2.0.0, Console 1.0.0, and Objects 1.0.0.
-- Turn `autoReferenced` off, change the main-thread `Task` APIs to `Awaitable`, and remove what Phase 1 deprecated.
+- Turn `autoReferenced` off and change the main-thread `Task` APIs to `Awaitable`. Remove deprecated APIs only when
+  their warning window has elapsed and all callers in the released packages have migrated. Keep `SingletonManager`
+  until Phase 4 replaces its callers and its deprecation window permits removal.
 - Write a migration guide for game teams.
 - Decide whether the packages stay in one repository or split. One repository with one directory per package is
   simpler while the team is small, and CI can still release each package separately.
@@ -215,20 +225,34 @@ simulation or server authority. The two lead to different seams.
 - Keep the public API snapshot from Phase 2 current, name an architecture owner, and review each package's
   dependencies regularly.
 
+**Why then.** Maintain the released foundation continuously; adopt a new engine or package only when support policy
+or a funded game's needs justify the migration.
+
+**Entry criteria.** The split packages have shipped and an owner is assigned. Each engine upgrade or new package
+starts only after its support status or stated trigger has been checked.
+
+**Exit criteria per maintenance cycle.** Supported-version CI is green, public API snapshots and migration guides are
+current, and every new dependency has an approved decision record. The maintenance program itself has no fixed end.
+
 **Effort.** Ongoing, roughly 10 to 20% of one engineer, rising with the number of packages.
 
-**Decide.** Each new package, through its decision record.
+**Risks and mitigations.** Engine schedules and game priorities can change. Recheck primary release sources at each
+upgrade, validate a pilot game, and keep the current supported release available during migration.
+
+**Decide before each cycle.** The engine support window, the pilot game, and each new package through its decision
+record.
 
 ## Keeping in-flight games working during the split
 
-1. **Phase 1 changes no install.** Games keep one dependency, `com.spellboundstudios.core`. Types that move carry
-   `[MovedFrom]`, so serialized data keeps loading. Unity's script updater rewrites game code for some of these moves
-   but not for assembly moves, so each release note lists the `using` changes. Script `.meta` files move with their
-   scripts, so scene and prefab references keep working.
-2. **The last 1.x release is the bridge.** The final Core 1.x release contains all three areas, already in their new
-   namespaces and assemblies, with `[Obsolete]` warnings on anything removed in 2.0. A game that compiles cleanly
-   against it has already handled the namespace and assembly moves. It still needs manifest changes, asmdef
-   references, and the `Task` to `Awaitable` signature changes listed in the migration guide.
+1. **Phase 1 validates a single-package 2.0 candidate.** Games testing it keep the package name
+   `com.spellboundstudios.core`, but pin the opt-in development candidate on a migration branch. Its namespace and
+   assembly moves require source and asmdef edits. Types that move carry `[MovedFrom]` for serialized data, and script
+   `.meta` files move with their scripts. CI loads representative scenes, prefabs, and module assets to verify this.
+2. **The last compatible 1.x release provides warnings.** It keeps the existing namespaces, assemblies, and public
+   signatures, adding `[Obsolete]` warnings with replacement guidance where possible. A clean build against it does
+   not prove the source and assembly migration complete. Teams rehearse those edits against the Phase 1 candidate;
+   the Phase 2 guide also lists manifest changes and the `Task` to `Awaitable` signature changes. Public API removals
+   wait for both the minimum minor-release and quarter-long warning periods.
 3. **Core 2.0 and the new packages ship together.** A game migrates by adding the scoped registry and the packages
    it uses, and adding asmdef references now that `autoReferenced` is off. The migration guide lists every removed
    member and its replacement.

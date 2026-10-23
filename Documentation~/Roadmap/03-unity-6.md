@@ -14,7 +14,7 @@ package. Each item carries its source. Items are labelled.
 
 | Release | Status in October 2026 | Label | Source |
 | --- | --- | --- | --- |
-| 6.0 LTS | Support ended October 2026 | Confirmed | [Unity 6 support][support] |
+| 6.0 LTS | Unity lists standard support through October 2026; its page gives no exact cutoff day | Confirmed | [Unity 6 support][support] |
 | 6.0 LTS exact dates | Support ended 16 October 2026. Enterprise and Industry support runs to 16 October 2027. | Unconfirmed | [endoflife.date][eol] |
 | 6.1, 6.2 | Update releases, now out of support | Unconfirmed | [endoflife.date][eol] |
 | 6.3 LTS | Released 4 December 2025, supported until December 2027 | Confirmed | [6.3 LTS post][u63], [Unity 6 support][support] |
@@ -111,20 +111,25 @@ Unity has not published final 6.7 notes. The 6.7 manual says more will be publis
 
 Each action names the fact above that drives it and the phase in the [roadmap](05-roadmap.md) that does it.
 
-1. **Raise the minimum Unity version to 6000.3 LTS (Phase 0).** 6.0 LTS is out of support. Set `"unity": "6000.3"`
-   and a `unityRelease` the studio's games already use, no earlier than `5f2` if the packages will be signed. Add
-   6000.7 when it ships as LTS, and drop 6000.3 when its support ends in December 2027.
+1. **Raise the Core 2.0 candidate minimum Unity version to 6000.3 LTS (Phase 0).** Unity lists 6.0 LTS support through October 2026;
+   the exact cutoff above remains unconfirmed. Set `"unity": "6000.3"`
+   and a `unityRelease` the studio's games already use, no earlier than `5f2` if the packages will be signed. Keep
+   the compatible Core 1.x line at its existing minimum and test critical fixes there during its support window;
+   changing a supported editor floor is a breaking change. Add 6000.7 when it ships as LTS, and drop 6000.3 when its
+   support ends in December 2027.
 2. **Update package versions (Phase 0).** Entities 1.3.14, Collections 2.5.7, and Burst 1.8.19 are well behind.
    Unity's Burst changelog lists 1.8.31 ([Burst changelog][burst-cl], confirmed), and the Input System changelog lists
-   1.20.1 ([Input System changelog][input-cl], confirmed). The latest 1.x Entities line we found is 1.5.0, from a mirror
-   of Unity's packages (unconfirmed). Confirm each version in the Package Manager for 6000.3 before bumping.
+   1.20.1 ([Input System changelog][input-cl], confirmed). The Entities mirror's
+   [package manifest](https://raw.githubusercontent.com/needle-mirror/com.unity.entities/master/package.json)
+   reports 1.5.0 (unconfirmed against Unity's registry). Confirm each version in the Package Manager for 6000.3 before bumping.
 3. **Stop relying on version pins for core packages (Phase 3).** On 6.4 and later the editor fixes the versions of
    Entities and its siblings. Use `versionDefines` in each asmdef when code must differ by version, and keep
    `package.json` entries as minimums.
 4. **Make every static reset explicit (Phase 0).** Domain reload is off by default for new 6.6
    projects and gone in 7.0. Give each static registry the `SubsystemRegistration` reset that `PresetRegistry` already
-   has. This applies to `CommandRegistry`, `AttributeCommandRegistry`, `PresetResolver`, `DeltaResolver`, and
-   `SingletonManager`. `[AutoStaticsCleanup]` exists from 6.5, so keep the explicit resets while 6.3 is supported and
+   has. Preserve the resets `dev` already adds to `CommandRegistry`, `AttributeCommandRegistry`, and `PresetResolver`.
+   Add a reset to `DeltaResolver`, and move `SingletonManager`'s existing `BeforeSceneLoad` clear to
+   `SubsystemRegistration` if initialization-order tests require it. `[AutoStaticsCleanup]` exists from 6.5, so keep the explicit resets while 6.3 is supported and
    adopt the attribute in Phase 5, once the minimum version is 6.7. Add a PlayMode test that enters play mode twice
    with domain reload off.
 5. **Put assembly scanning behind one call (Phase 0).** `dev`'s `Runtime/Tooling/AssemblyScanning.cs` is the single
@@ -136,7 +141,8 @@ Each action names the fact above that drives it and the phase in the [roadmap](0
    `IDeleteResolver.ResolveDelete` return `Task<bool>`. (`dev` already made `IObjectDataAccess.DeleteInstance`
    synchronous.) Change them to `Awaitable<bool>` when the objects package is first released, because a new package is
    the cheapest time for a signature change. Keep `Task` for work that
-   truly runs off the main thread, such as `FileSink`'s writer.
+   needs Task semantics or runs in a background task. `FileSink` currently uses a dedicated `Thread`, so its writer
+   needs no Task-to-Awaitable migration.
 8. **Track the EntityId and Find API changes (Phase 3).** The code calls no instance-ID API today. A search of `main`
    and `dev` finds no `GetInstanceID`, no `FindObjectsOfType`, no `Entities.ForEach`, and no `IAspect`.
    `AttributeCommandRegistry` uses `FindAnyObjectByType`, which is not deprecated. Add an analyzer or CI search so
@@ -146,9 +152,12 @@ Each action names the fact above that drives it and the phase in the [roadmap](0
 10. **Keep samples free of a render pipeline (Phase 2).** Built-in RP is deprecated. The console prefab uses uGUI only,
     which works on every pipeline. Any future visual sample should target URP.
 11. **Decide on package signing with the registry choice (Phase 2).** Unsigned packages show as unsigned from 6.3.
-12. **Prepare for one simulation, many worlds (Phase 4).** "ECS for all" and Netcode for Entities both run more than
-    one world. The world seam in [Package layout](02-package-layout.md#staying-ready-for-multiplayer-and-mmo-games)
-    removes the `World.DefaultGameObjectInjectionWorld` lookups.
+12. **Prepare for one simulation, many worlds (Phase 4).** A client/server setup can need separate worlds in one
+    process; "ECS for all" does not itself require multiple worlds. The world seam in
+    [Package layout](02-package-layout.md#staying-ready-for-multiplayer-and-mmo-games) removes the
+    `World.DefaultGameObjectInjectionWorld` lookups. See Unity's
+    [Netcode worlds documentation](https://docs.unity3d.com/Packages/com.unity.netcode@1.5/manual/client-server-worlds.html)
+    (confirmed).
 
 [support]: https://unity.com/releases/unity-6/support
 [eol]: https://endoflife.date/unity
