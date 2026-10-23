@@ -126,7 +126,7 @@ leaves it.
   already takes `IObjectParent`.
 - `IObjectParent.InitializeObjectParentChunk(Vector3Int, Entity)` loses its `Entity` parameter. The ECS assembly
   supplies the entity.
-- `ObjectPresetUtils.TryGetEntityPrefab`, which returns an `Entity`, moves to `Spellbound.Objects.Entities`.
+- `ObjectPresetUtils.TryGetEntityPrefab`, which exposes an `Entity` through an `out` parameter, moves to `Spellbound.Objects.Entities`.
 - `TransformData`'s `LocalTransform` conversions move to extension methods in `Spellbound.Objects.Entities`. Its
   other constructors use `Unity.Mathematics`, which the objects package already depends on. Unity 6.5 made
   Mathematics a built-in engine module ([Unity 6.5 features](https://docs.unity.com/en-us/engine/6000.6/manual/whats-new/unity65)),

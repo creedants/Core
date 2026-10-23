@@ -61,8 +61,8 @@ Unity has not published final 6.7 notes. The 6.7 manual says more will be publis
   Unity staff confirmed the 7.0 alpha has no domain reload ([CoreCLR update, October 2026][clr-oct], confirmed).
 - From 6.6, new projects enter play mode without a domain reload by default, so static fields are not reset. Existing
   projects keep their setting ([6.6 post][u66], confirmed).
-- Unity 6.5 added the `[AutoStaticsCleanup]` and `[NoAutoStaticsCleanup]` attributes, which reset static fields
-  through generated code, and an optional analyzer that lists statics needing a reset
+- Unity 6.5 added `[AutoStaticsCleanup]`, which resets static fields through generated code, `[NoAutoStaticsCleanup]`
+  to opt out, and an optional analyzer that lists statics needing a reset
   ([Unity 6.5 features][u65], confirmed).
 - Unity's upgrade guide for library authors ([CoreCLR upgrade guide][clr-guide], announced, a living document) says:
   - Statics are not reset for you. Use `[AutoStaticsCleanup]` or `[BeforeCodeUnloading]`.
@@ -121,11 +121,11 @@ Each action names the fact above that drives it and the phase in the [roadmap](0
 3. **Stop relying on version pins for core packages (Phase 3).** On 6.4 and later the editor fixes the versions of
    Entities and its siblings. Use `versionDefines` in each asmdef when code must differ by version, and keep
    `package.json` entries as minimums.
-4. **Make every static reset explicit (Phase 0, finished in Phase 3).** Domain reload is off by default for new 6.6
+4. **Make every static reset explicit (Phase 0).** Domain reload is off by default for new 6.6
    projects and gone in 7.0. Give each static registry the `SubsystemRegistration` reset that `PresetRegistry` already
    has. This applies to `CommandRegistry`, `AttributeCommandRegistry`, `PresetResolver`, `DeltaResolver`, and
    `SingletonManager`. `[AutoStaticsCleanup]` exists from 6.5, so keep the explicit resets while 6.3 is supported and
-   adopt the attribute once the minimum version is 6.7. Add a PlayMode test that enters play mode twice
+   adopt the attribute in Phase 5, once the minimum version is 6.7. Add a PlayMode test that enters play mode twice
    with domain reload off.
 5. **Put assembly scanning behind one call (Phase 0).** `dev`'s `Runtime/Tooling/AssemblyScanning.cs` is the single
    place that calls `AppDomain.GetAssemblies()` at runtime. Move `Editor/LogConfigEditor.cs` to `TypeCache`. Then the

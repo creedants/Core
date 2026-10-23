@@ -143,8 +143,8 @@ support window.
 
 - Make 6000.7 a required CI target, and fix what it reports.
 - Use `versionDefines` for the core packages whose versions the editor now fixes.
-- Switch assembly scanning to the CoreCLR-ready API if Unity has shipped it in 6.7. Adopt `[AutoStaticsCleanup]`
-  (available since 6.5) in place of the explicit resets once 6.3 support ends.
+- Switch assembly scanning to the CoreCLR-ready API if Unity has shipped it in 6.7. Keep the explicit static resets
+  from Phase 0, because 6000.3 is still supported.
 - Run the test suite on the experimental CoreCLR player on one desktop platform, and record what fails.
 - Add analyzers or CI searches for banned APIs: `GetInstanceID`, `FindObjectsOfType`, `Entities.ForEach`, `IAspect`,
   `BinaryFormatter`, and `string.GetHashCode` in persisted or networked identity.
@@ -208,6 +208,8 @@ simulation or server authority. The two lead to different seams.
 **Work.**
 
 - Move to the CoreCLR editor and Unity 7 once a Unity 7 LTS exists.
+- Once 6000.3 support is dropped, replace the explicit static resets with `[AutoStaticsCleanup]` (available since
+  Unity 6.5).
 - Create packages from the "when needed" list in [Package layout](02-package-layout.md#packages-to-create-when-needed)
   as their triggers fire, each through a decision record.
 - Keep the public API snapshot from Phase 2 current, name an architecture owner, and review each package's
